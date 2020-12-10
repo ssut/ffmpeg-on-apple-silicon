@@ -473,4 +473,4 @@ build_snappy
 build_ffmpeg
 total_end_time="$(date -u +%s)"
 total_elapsed="$(($total_end_time-$total_start_time))"
-echo "Total $elapsed seconds elapsed for build"
+echo "Total $total_elapsed seconds elapsed for build"
