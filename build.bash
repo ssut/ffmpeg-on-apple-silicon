@@ -29,19 +29,33 @@ export LDFLAGS=${LDFLAGS:-}
 export CFLAGS=${CFLAGS:-}
 
 function ensure_package () {
- if [[ ! -e "/opt/homebrew/opt/$1" ]]; then
-    echo "Installing $1 using Homebrew"
-    brew install "$1"
+  if [[ "$ARCH" == "arm64" ]]; then
+    if [[ ! -e "/opt/homebrew/opt/$1" ]]; then
+      echo "Installing $1 using Homebrew"
+      brew install "$1"
+
+      export LDFLAGS="-L/opt/homebrew/opt/$1/lib ${LDFLAGS}"
+      export CFLAGS="-I/opt/homebrew/opt/$1/include ${CFLAGS}"
+      export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/homebrew/opt/$1/lib/pkgconfig"
+    fi
+  else
+    if [[ ! -e "/usr/local/opt/$1" ]]; then
+      echo "Installing $1 using Homebrew"
+      brew install "$1"
+      export LDFLAGS="-L/usr/local/opt/$1/lib ${LDFLAGS}"
+      export CFLAGS="-I/usr/local/opt/$1/include ${CFLAGS}"
+      export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/opt/$1/lib/pkgconfig"
+    fi
   fi
-  export LDFLAGS="-L/opt/homebrew/opt/$1/lib ${LDFLAGS}"
-  export CFLAGS="-I/opt/homebrew/opt/$1/include ${CFLAGS}"
-  export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/opt/homebrew/opt/$1/lib/pkgconfig"
 }
 
 ensure_package glib
 
 if ! command -v autoreconf &> /dev/null; then
   brew install automake
+fi
+if ! command -v cmake &> /dev/null; then
+  brew install cmake
 fi
 
 echo "Cloning required git repositories"
@@ -61,7 +75,7 @@ echo "Downloading: fribidi (1.0.10)"
 {(curl -Ls -o - https://github.com/fribidi/fribidi/releases/download/v1.0.10/fribidi-1.0.10.tar.xz | tar Jxf - -C $CMPLD/) &};
 echo "Downloading: vid.stab (1.1.0)"
 curl -Ls -o - https://github.com/georgmartius/vid.stab/archive/v1.1.0.tar.gz | tar zxf - -C $CMPLD/
-curl -o "$CMPLD/vid.stab-1.1.0/fix_cmake_quoting.patch" https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch
+curl -s -o "$CMPLD/vid.stab-1.1.0/fix_cmake_quoting.patch" https://raw.githubusercontent.com/Homebrew/formula-patches/5bf1a0e0cfe666ee410305cece9c9c755641bfdf/libvidstab/fix_cmake_quoting.patch
 echo "Downloading: snappy (1.1.8)"
 {(curl -Ls -o - https://github.com/google/snappy/archive/1.1.8.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: enca (1.19)"
@@ -76,6 +90,8 @@ echo "Downloading: expat (2.2.10)"
 {(curl -Ls -o - https://github.com/libexpat/libexpat/releases/download/R_2_2_10/expat-2.2.10.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: freetype (2.10.4)"
 {(curl -Ls -o - https://download.savannah.gnu.org/releases/freetype/freetype-2.10.4.tar.gz | tar zxf - -C $CMPLD/) &};
+echo "Downloading: gettext (0.21)"
+{(curl -Ls -o - https://ftp.gnu.org/gnu/gettext/gettext-0.21.tar.xz | tar Jxf - -C $CMPLD/) &};
 echo "Downloading: fontconfig (2.13.93)"
 {(curl -Ls -o - https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.93.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: libass (0.15.0)"
@@ -90,10 +106,11 @@ echo "Downloading: libvorbis (1.3.7)"
 {(curl -Ls -o - https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: libopus (1.3.1)"
 {(curl -Ls -o - https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz | tar zxf - -C $CMPLD/) &};
-echo "Downloading: libogg (1.3.4)"
-{(curl -Ls -o - https://downloads.xiph.org/releases/ogg/libogg-1.3.4.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: harfbuzz (2.7.2)"
 {(curl -Ls -o - https://github.com/harfbuzz/harfbuzz/releases/download/2.7.2/harfbuzz-2.7.2.tar.xz | tar Jxf - -C $CMPLD/) &};
+echo "Downloading: libogg (1.3.4)"
+curl -Ls -o - https://downloads.xiph.org/releases/ogg/libogg-1.3.4.tar.gz | tar zxf - -C $CMPLD/
+curl -s -o "$CMPLD/libogg-1.3.4/fix_unsigned_typedefs.patch" "https://github.com/xiph/ogg/commit/c8fca6b4a02d695b1ceea39b330d4406001c03ed.patch?full_index=1"
 
 wait
 
@@ -291,6 +308,19 @@ function build_freetype () {
   fi
 }
 
+function build_gettext () {
+  if [[ ! -e "${SRC}/lib/pkgconfig/gettext.pc" ]]; then
+    echo '♻️ ' Start compiling gettext
+    cd ${CMPLD}
+    cd gettext-0.21
+    ./configure --prefix=${SRC} --disable-dependency-tracking --disable-silent-rules --disable-debug --disable-shared --enable-static \
+                --with-included-gettext --with-included-glib --with-includedlibcroco --with-included-libunistring --with-emacs \
+                --disable-java --disable-csharp --without-git --without-cvs --without-xz
+    make -j ${NUM_PARALLEL_BUILDS}
+    make install
+  fi
+}
+
 function build_fontconfig () {
   if [[ ! -e "${SRC}/lib/pkgconfig/fontconfig.pc" ]]; then
     echo '♻️ ' Start compiling FONTCONFIG
@@ -340,6 +370,7 @@ function build_ogg () {
     echo '♻️ ' Start compiling LIBOGG
     cd ${CMPLD}
     cd libogg-1.3.4
+    patch p1 < ./fix_unsigned_typedefs.patch
     ./configure --prefix=${SRC} --disable-shared --enable-static
     make -j ${NUM_PARALLEL_BUILDS}
     make install
@@ -409,9 +440,10 @@ function build_ffmpeg () {
   end_time="$(date -u +%s)"
   elapsed="$(($end_time-$start_time))"
   make install
-  echo "Total of $elapsed seconds elapsed for build"
+  echo "[FFmpeg] $elapsed seconds elapsed for build"
 }
 
+total_start_time="$(date -u +%s)"
 build_fribidi
 build_yasm
 build_aom
@@ -426,6 +458,9 @@ build_expat
 build_libiconv
 build_enca
 build_freetype
+if [[ "$ARCH" == "arm64" ]]; then
+  build_gettext
+fi
 build_fontconfig
 build_harfbuzz
 build_ass
@@ -436,19 +471,6 @@ build_theora
 build_vidstab
 build_snappy
 build_ffmpeg
-
-# echo '♻️ ' Start compiling LIBASS
-
-# #
-# # LIBASS
-# #
-
-# cd ${CMPLD}
-
-# cd libass-0.15.0
-
-# ./configure --prefix=${SRC} --disable-fontconfig --disable-shared --enable-static
-
-# make -j ${NUM_PARALLEL_BUILDS}
-
-# make install
+total_end_time="$(date -u +%s)"
+total_elapsed="$(($total_end_time-$total_start_time))"
+echo "Total $elapsed seconds elapsed for build"
