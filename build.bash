@@ -426,8 +426,8 @@ function build_ffmpeg () {
   echo '♻️ ' Start compiling FFMPEG
   cd ${CMPLD}
   cd ffmpeg
-  export LDFLAGS="-L${SRC}/lib ${LDFLAGS}"
-  export CFLAGS="-I${SRC}/include ${CFLAGS}"
+  export LDFLAGS="-L${SRC}/lib ${LDFLAGS:-}"
+  export CFLAGS="-I${SRC}/include ${CFLAGS:-}"
   export LDFLAGS="$LDFLAGS -lexpat -lenca -lfribidi -liconv -lstdc++ -lfreetype -framework CoreText -framework VideoToolbox"
   ./configure --prefix=${SRC} --extra-cflags="-fno-stack-check" --arch=${ARCH} --cc=/usr/bin/clang \
               --enable-fontconfig --enable-gpl --enable-libopus --enable-libtheora --enable-libvorbis \
