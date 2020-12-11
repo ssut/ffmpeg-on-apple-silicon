@@ -52,6 +52,9 @@ function ensure_package () {
 ensure_package glib
 
 if ! command -v autoreconf &> /dev/null; then
+  brew install autoconf
+fi
+if ! command -v automake &> /dev/null; then
   brew install automake
 fi
 if ! command -v cmake &> /dev/null; then
@@ -370,7 +373,7 @@ function build_ogg () {
     echo '♻️ ' Start compiling LIBOGG
     cd ${CMPLD}
     cd libogg-1.3.4
-    patch p1 < ./fix_unsigned_typedefs.patch
+    patch -p1 < ./fix_unsigned_typedefs.patch
     ./configure --prefix=${SRC} --disable-shared --enable-static
     make -j ${NUM_PARALLEL_BUILDS}
     make install
