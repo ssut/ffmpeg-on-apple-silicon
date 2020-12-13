@@ -49,6 +49,8 @@ function ensure_package () {
   fi
 }
 
+ensure_package pkgconfig
+ensure_package libtool
 ensure_package glib
 
 if ! command -v autoreconf &> /dev/null; then
