@@ -114,9 +114,11 @@ echo "Downloading: libopus (1.3.1)"
 echo "Downloading: harfbuzz (2.7.2)"
 {(curl -Ls -o - https://github.com/harfbuzz/harfbuzz/releases/download/2.7.2/harfbuzz-2.7.2.tar.xz | tar Jxf - -C $CMPLD/) &};
 echo "Downloading: libogg (1.3.4)"
-curl -Ls -o - https://downloads.xiph.org/releases/ogg/libogg-1.3.4.tar.gz | tar zxf - -C $CMPLD/
-curl -s -o "$CMPLD/libogg-1.3.4/fix_unsigned_typedefs.patch" "https://github.com/xiph/ogg/commit/c8fca6b4a02d695b1ceea39b330d4406001c03ed.patch?full_index=1"
-
+{(curl -Ls -o - https://downloads.xiph.org/releases/ogg/libogg-1.3.4.tar.gz | tar zxf - -C $CMPLD/) &};
+echo "Downloading: libsrt (1.4.1)"
+{(curl -Ls -o - https://github.com/Haivision/srt/archive/v1.4.1.tar.gz | tar zxf - -C $CMPLD/) &};
+echo "Downloading openssl (1.1.1i)"
+curl -Ls -o - "https://www.openssl.org/source/openssl-1.1.1i.tar.gz" | tar zxf - -C $CMPLD/
 wait
 
 function build_fribidi () {
@@ -314,7 +316,7 @@ function build_freetype () {
 }
 
 function build_gettext () {
-  if [[ ! -e "${SRC}/lib/pkgconfig/gettext.pc" ]]; then
+  if [[ ! -e "${SRC}/lib/libgettextpo.a" ]]; then
     echo '♻️ ' Start compiling gettext
     cd ${CMPLD}
     cd gettext-0.21
@@ -353,7 +355,7 @@ function build_ass () {
     cd ${CMPLD}
     cd libass-0.15.0
     autoreconf -i
-    ./configure --prefix=${SRC} --disable-dependency-tracking --disable-shread --enable-static
+    ./configure --prefix=${SRC} --disable-dependency-tracking --disable-shared --enable-static
     make -j ${NUM_PARALLEL_BUILDS}
     make install
   fi
@@ -375,6 +377,7 @@ function build_ogg () {
     echo '♻️ ' Start compiling LIBOGG
     cd ${CMPLD}
     cd libogg-1.3.4
+    curl -s -o  "$CMPLD/libogg-1.3.4/fix_unsigned_typedefs.patch" "https://github.com/xiph/ogg/commit/c8fca6b4a02d695b1ceea39b330d4406001c03ed.patch?full_index=1"
     patch -p1 < ./fix_unsigned_typedefs.patch
     ./configure --prefix=${SRC} --disable-shared --enable-static
     make -j ${NUM_PARALLEL_BUILDS}
@@ -427,6 +430,33 @@ function build_snappy () {
   fi
 }
 
+function build_openssl () {
+  if [[ ! -e "${SRC}/lib/libcrypto.a" ]]; then
+    echo '♻️ ' Start compiling OpenSSL
+    cd ${CMPLD}
+    cd openssl-1.1.1i
+    sed -n 's/\(##### GNU Hurd\)/"darwin64-arm64-cc" => { \n    inherit_from     => [ "darwin-common", asm("aarch64_asm") ],\n    CFLAGS           => add("-Wall"),\n    cflags           => add("-arch arm64 "),\n    lib_cppflags     => add("-DL_ENDIAN"),\n    bn_ops           => "SIXTY_FOUR_BIT_LONG", \n    perlasm_scheme   => "macosx", \n}, \n\1/g' Configurations/10-main.conf
+    ./Configure --prefix="${SRC}" no-asm darwin64-arm64-cc 
+    make -j ${NUM_PARALLEL_BUILDS}
+    make install_sw
+    rm "${SRC}"/lib/*.dylib
+  fi
+}
+
+function build_libsrt () {
+  if [[ ! -e "${SRC}/lib/libsrt.a" ]]; then
+    echo '♻️ ' Start compiling SRT
+    cd ${CMPLD}
+    cd srt-1.4.1
+    export OPENSSL_ROOT_DIR="${SRC}"
+	  export OPENSSL_LIB_DIR="${SRC}"/lib
+	  export OPENSSL_INCLUDE_DIR="${SRC}"/include/
+	  cmake . -DCMAKE_INSTALL_PREFIX="${SRC}" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_BINDIR=bin -DCMAKE_INSTALL_INCLUDEDIR=include -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DENABLE_APPS=OFF -DUSE_STATIC_LIBSTDCXX=ON
+    make -j ${NUM_PARALLEL_BUILDS}
+    make install
+  fi
+}
+
 function build_ffmpeg () {
   echo '♻️ ' Start compiling FFMPEG
   cd ${CMPLD}
@@ -438,7 +468,8 @@ function build_ffmpeg () {
               --enable-fontconfig --enable-gpl --enable-libopus --enable-libtheora --enable-libvorbis \
               --enable-libmp3lame --enable-libass --enable-libfreetype --enable-libx264 --enable-libx265 --enable-libvpx \
               --enable-libaom --enable-libvidstab --enable-libsnappy --enable-version3 --pkg-config-flags=--static \
-              --disable-ffplay --enable-postproc --enable-nonfree --enable-runtime-cpudetect
+              --disable-ffplay --enable-postproc --enable-nonfree --enable-runtime-cpudetect --enable-libsrt \
+              --disable-shared --enable-openssl
   echo "build start"
   start_time="$(date -u +%s)"
   make -j ${NUM_PARALLEL_BUILDS}
@@ -475,6 +506,8 @@ build_vorbis
 build_theora
 build_vidstab
 build_snappy
+build_openssl
+build_libsrt
 build_ffmpeg
 total_end_time="$(date -u +%s)"
 total_elapsed="$(($total_end_time-$total_start_time))"
