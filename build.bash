@@ -88,7 +88,7 @@ echo "Downloading: enca (1.19)"
 echo "Downloading: libiconv (1.16)"
 {(curl -Ls -o - https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: zlib (1.2.11)"
-{(curl -Ls -o - https://zlib.net/zlib-1.2.11.tar.gz | tar zxf - -C $CMPLD/) &};
+{(curl -Ls -o - https://zlib.net/fossils/zlib-1.2.11.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: libtheora (1.1.1)"
 {(curl -Ls -o - http://downloads.xiph.org/releases/theora/libtheora-1.1.1.tar.bz2 | tar xf - -C $CMPLD/) &};
 echo "Downloading: expat (2.2.10)"
@@ -108,13 +108,13 @@ echo "Downloading: pkg-config (0.29.2)"
 echo "Downloading: nasm (2.15.05)"
 {(curl -Ls -o - https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: libvorbis (1.3.7)"
-{(curl -Ls -o - https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.gz | tar zxf - -C $CMPLD/) &};
+{(curl -Ls -o - https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.7.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: libopus (1.3.1)"
 {(curl -Ls -o - https://archive.mozilla.org/pub/opus/opus-1.3.1.tar.gz | tar zxf - -C $CMPLD/) &};
 echo "Downloading: harfbuzz (2.7.2)"
 {(curl -Ls -o - https://github.com/harfbuzz/harfbuzz/releases/download/2.7.2/harfbuzz-2.7.2.tar.xz | tar Jxf - -C $CMPLD/) &};
 echo "Downloading: libogg (1.3.4)"
-curl -Ls -o - https://downloads.xiph.org/releases/ogg/libogg-1.3.4.tar.gz | tar zxf - -C $CMPLD/
+curl -Ls -o - https://ftp.osuosl.org/pub/xiph/releases/ogg/libogg-1.3.4.tar.gz | tar zxf - -C $CMPLD/
 curl -s -o "$CMPLD/libogg-1.3.4/fix_unsigned_typedefs.patch" "https://github.com/xiph/ogg/commit/c8fca6b4a02d695b1ceea39b330d4406001c03ed.patch?full_index=1"
 
 wait
