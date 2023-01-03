@@ -66,7 +66,7 @@ fi
 echo "Cloning required git repositories"
 git clone --depth 1 -b master https://code.videolan.org/videolan/x264.git $CMPLD/x264 &
 git clone --depth 1 -b origin https://github.com/rbrito/lame.git $CMPLD/lame &
-git clone --depth 1 -b master https://github.com/webmproject/libvpx $CMPLD/libvpx &
+git clone --depth 1 -b main https://github.com/webmproject/libvpx $CMPLD/libvpx &
 git clone --depth 1 -b master https://github.com/FFmpeg/FFmpeg $CMPLD/ffmpeg &
 git clone --depth 1 -b v2.0.1 https://aomedia.googlesource.com/aom.git $CMPLD/aom &
 wait
