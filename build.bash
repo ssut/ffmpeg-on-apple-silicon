@@ -342,6 +342,9 @@ function build_harfbuzz () {
     echo '♻️ ' Start compiling harfbuzz
     cd ${CMPLD}
     cd harfbuzz-2.7.2
+    sed -i -e 's/unsigned int  size0, size1, supp_size;/unsigned int  size0, size1;/g' ./src/hb-subset-cff1.cc
+    sed -i -e 's/supp_size = 0;//g' ./src/hb-subset-cff1.cc
+    sed -i -e 's/supp_size += SuppEncoding::static_size \* supp_codes.length;//g' ./src/hb-subset-cff1.cc
     ./configure --prefix=${SRC} --disable-shared --enable-static
     make -j ${NUM_PARALLEL_BUILDS}
     make install
